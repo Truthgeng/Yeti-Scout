@@ -95,6 +95,7 @@ export type SwapSignals = {
   topTraderShare: number; // share of swaps made by the 10 busiest wallets
   roundTrippers: number; // wallets that bought AND sold inside the window
   repeatSizeWallets: number; // wallets making 3+ swaps of almost the same size
+  repeatSizeShare: number; // share of all swaps made by those wallets
   source: "sui-graphql" | "mock";
 };
 

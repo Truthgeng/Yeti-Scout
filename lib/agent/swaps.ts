@@ -79,6 +79,7 @@ export function summarise(pool: string, swaps: Swap[], source: SwapSignals["sour
 
   let roundTrippers = 0;
   let repeatSizeWallets = 0;
+  let repeatSizeSwaps = 0;
   for (const list of byTrader.values()) {
     if (list.some((s) => s.side === "buy") && list.some((s) => s.side === "sell")) roundTrippers++;
     // 3+ swaps within 2% of the same size is how scripted volume usually looks
@@ -89,7 +90,7 @@ export function summarise(pool: string, swaps: Swap[], source: SwapSignals["sour
         const prev = sorted[i - 1].amount;
         run = prev > 0n && (sorted[i].amount - prev) * 100n <= prev * 2n ? run + 1 : 1;
       }
-      if (run >= 3) repeatSizeWallets++;
+      if (run >= 3) { repeatSizeWallets++; repeatSizeSwaps += list.length; }
     }
   }
 
@@ -106,6 +107,7 @@ export function summarise(pool: string, swaps: Swap[], source: SwapSignals["sour
     topTraderShare: swaps.length ? top10 / swaps.length : 0,
     roundTrippers,
     repeatSizeWallets,
+    repeatSizeShare: swaps.length ? repeatSizeSwaps / swaps.length : 0,
     source,
   };
 }

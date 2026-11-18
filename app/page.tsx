@@ -326,7 +326,7 @@ export default function Home() {
                     <div><b>{report.swaps.swaps}</b><span>recent swaps</span></div>
                     <div><b>{report.swaps.traders}</b><span>wallets</span></div>
                     <div><b>{report.swaps.roundTrippers}</b><span>bought and sold</span></div>
-                    <div><b>{report.swaps.repeatSizeWallets}</b><span>same-size bots</span></div>
+                    <div><b>{Math.round(report.swaps.repeatSizeShare * 100)}%</b><span>swaps by same-size bots</span></div>
                   </div>
                   <div className="bar" title="Share of swaps by the 10 busiest wallets"><span style={{ width: `${Math.round(report.swaps.topTraderShare * 100)}%` }} /></div>
                   <p className="fine">{Math.round(report.swaps.topTraderShare * 100)}% of swaps by the 10 busiest wallets{report.swaps.hoursCovered >= 1 ? ` · last ${Math.round(report.swaps.hoursCovered)}h` : ""}</p>

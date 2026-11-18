@@ -80,7 +80,11 @@ export function ruleScore(social: SocialSignals | null, { market, swaps }: Oncha
       score -= rtShare > 0.7 ? 18 : 10;
       flags.push(`${swaps.roundTrippers} of ${swaps.traders} wallets both bought and sold in ${window}, a common wash pattern`);
     }
-    if (swaps.repeatSizeWallets >= 2) { score -= 8; flags.push(`${swaps.repeatSizeWallets} wallets keep swapping the exact same size, which looks scripted`); }
+    // DCA bots and arbitrage repeat sizes too, so only flag it when they make most of the trading
+    if (swaps.repeatSizeWallets >= 2 && swaps.repeatSizeShare > 0.4) {
+      score -= swaps.repeatSizeShare > 0.7 ? 14 : 8;
+      flags.push(`${pct(swaps.repeatSizeShare)} of swaps come from ${swaps.repeatSizeWallets} wallets repeating the exact same size, which looks scripted`);
+    }
     if (swaps.buyers > 0 && swaps.sellers === 0 && swaps.swaps >= 20) flags.push("Nobody sold in the latest swaps");
   } else if (swaps) {
     flags.push("Fewer than 10 recent swaps in its main pool");

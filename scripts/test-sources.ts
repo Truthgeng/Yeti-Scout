@@ -26,8 +26,12 @@ try {
 if (pool) {
   try {
     const s = await swapSignals(coin, pool);
-    ok(`Sui GraphQL (${SUI_GRAPHQL_URL}): ${s.swaps} swaps by ${s.traders} wallets over ${s.hoursCovered}h, ${s.roundTrippers} bought and sold, ${s.repeatSizeWallets} same-size`);
+    ok(`Sui GraphQL (${SUI_GRAPHQL_URL}): ${s.swaps} swaps by ${s.traders} wallets over ${s.hoursCovered}h, ${s.roundTrippers} bought and sold, ${s.repeatSizeWallets} same-size wallets making ${Math.round(s.repeatSizeShare * 100)}% of swaps, top 10 wallets ${Math.round(s.topTraderShare * 100)}%`);
     if (s.swaps === 0) console.log("  \x1b[33mWARN\x1b[0m 0 swaps found. Send me this output so I can check the pool query.");
+    const { ruleVerdict } = await import("../lib/agent/verdict");
+    const m2 = await marketSignals(coin);
+    const v = ruleVerdict(null, { market: m2, swaps: s });
+    ok(`Onchain-only score: ${v.score}/100, ${v.label}. Flags: ${v.flags.join("; ") || "none"}`);
   } catch (e) { bad("Sui GraphQL swaps", e); }
 }
 
