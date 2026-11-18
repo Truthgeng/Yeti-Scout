@@ -55,13 +55,13 @@ export function mockReport(input: CheckInput): Report {
       symbol: input.coinType.split("::").pop(), name: "Sample token", priceUsd: 0.004,
       marketCapUsd: farmed ? 2_400_000 : 4_100_000, liquidityUsd: farmed ? 9_000 : 210_000,
       volume24hUsd: farmed ? 41_000 : 68_000, buys24h: farmed ? 9 : 410, sells24h: farmed ? 6 : 330, pools: farmed ? 1 : 4,
-      mainPool: { id: "0xmock", dex: "cetus", liquidityUsd: farmed ? 9_000 : 150_000 },
+      mainPool: { id: "0xmock", dex: "cetus", liquidityUsd: farmed ? 9_000 : 150_000 }, topPools: ["0xmock"],
       ageDays: farmed ? 4 : 360, holders: farmed ? 310 : 18_400, top10HolderShare: farmed ? 0.82 : 0.31,
     };
     const wallets = Array.from({ length: farmed ? 8 : 140 }, (_, i) => `0x${(seed + i).toString(16).padStart(64, "0")}`);
     const list = Array.from({ length: 200 }, (_, i) => {
       const trader = wallets[Math.floor(rand() * wallets.length)];
-      const side = (rand() > 0.5 ? "buy" : "sell") as "buy" | "sell";
+      const side = (farmed ? (i % 2 ? "buy" : "sell") : rand() > 0.5 ? "buy" : "sell") as "buy" | "sell";
       const amount = farmed ? 1_000_000_000_000n : BigInt(Math.floor(rand() * 9e12) + 1e9);
       return { trader, side, amount, at: Date.now() - i * (farmed ? 60_000 : 300_000) };
     });

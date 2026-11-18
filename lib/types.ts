@@ -77,6 +77,8 @@ export type MarketSignals = {
   sells24h: number;
   pools: number;
   mainPool?: { id: string; dex: string; liquidityUsd: number; createdAt?: number };
+  /** The deepest pools (up to 3), read for swaps */
+  topPools: string[];
   ageDays?: number; // age of the oldest pool
   holders?: number;
   top10HolderShare?: number; // 0 to 1
@@ -95,7 +97,10 @@ export type SwapSignals = {
   topTraderShare: number; // share of swaps made by the 10 busiest wallets
   roundTrippers: number; // wallets that bought AND sold inside the window
   repeatSizeWallets: number; // wallets making 3+ swaps of almost the same size
-  repeatSizeShare: number; // share of all swaps made by those wallets
+  repeatSizeShare: number; // share of all swaps made by those wallets (bots of any kind)
+  washWallets: number; // repeat-size wallets that ALSO buy and sell: trading with themselves
+  washShare: number; // share of all swaps made by those wallets
+  pools: number; // pools read
   source: "sui-graphql" | "mock";
 };
 

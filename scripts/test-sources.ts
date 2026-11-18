@@ -13,20 +13,20 @@ const bad = (s: string, e: unknown) => console.log(`  \x1b[31mFAIL\x1b[0m ${s}: 
 
 console.log(`\nTesting data sources for ${coin}\n`);
 
-let pool: string | undefined;
+let pools: string[] = [];
 try {
   const m = await marketSignals(coin);
   ok(`DexScreener: ${m.pools} pools, $${Math.round(m.liquidityUsd)} liquidity, $${Math.round(m.volume24hUsd)} 24h volume, price $${m.priceUsd}`);
   ok(`DexScreener: main pool ${m.mainPool?.id ?? "none"} on ${m.mainPool?.dex ?? "?"}, listed X handle: ${m.listedHandle ?? "none"}`);
   if (m.holders !== undefined) ok(`GeckoTerminal holders: ${m.holders}, top 10 hold ${Math.round((m.top10HolderShare ?? 0) * 100)}%`);
   else console.log("  \x1b[33mWARN\x1b[0m GeckoTerminal gave no holder data (scans still work, just without holder stats)");
-  pool = m.mainPool?.id;
+  pools = m.topPools;
 } catch (e) { bad("DexScreener / GeckoTerminal", e); }
 
-if (pool) {
+if (pools.length) {
   try {
-    const s = await swapSignals(coin, pool);
-    ok(`Sui GraphQL (${SUI_GRAPHQL_URL}): ${s.swaps} swaps by ${s.traders} wallets over ${s.hoursCovered}h, ${s.roundTrippers} bought and sold, ${s.repeatSizeWallets} same-size wallets making ${Math.round(s.repeatSizeShare * 100)}% of swaps, top 10 wallets ${Math.round(s.topTraderShare * 100)}%`);
+    const s = await swapSignals(coin, pools);
+    ok(`Sui GraphQL (${SUI_GRAPHQL_URL}): ${s.pools} pools, ${s.swaps} swaps by ${s.traders} wallets over ${s.hoursCovered}h, ${s.roundTrippers} bought and sold, ${s.repeatSizeWallets} bot wallets (${Math.round(s.repeatSizeShare * 100)}% of swaps), ${s.washWallets} wash bots (${Math.round(s.washShare * 100)}%), top 10 wallets ${Math.round(s.topTraderShare * 100)}%`);
     if (s.swaps === 0) console.log("  \x1b[33mWARN\x1b[0m 0 swaps found. Send me this output so I can check the pool query.");
     const { ruleVerdict } = await import("../lib/agent/verdict");
     const m2 = await marketSignals(coin);

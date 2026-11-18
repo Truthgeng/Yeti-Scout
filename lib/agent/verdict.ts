@@ -74,16 +74,18 @@ export function ruleScore(social: SocialSignals | null, { market, swaps }: Oncha
     const window = swaps.hoursCovered >= 1 ? `the last ${Math.round(swaps.hoursCovered)}h` : "the latest swaps";
     if (swaps.traders < 10) { score -= 12; flags.push(`Only ${swaps.traders} wallets made ${swaps.swaps} swaps in ${window}`); }
     else if (swaps.traders / swaps.swaps > 0.6) { score += 8; positives.push(`${swaps.traders} different wallets made ${swaps.swaps} swaps in ${window}`); }
-    if (swaps.topTraderShare > 0.8 && swaps.traders >= 10) { score -= 8; flags.push(`10 wallets made ${pct(swaps.topTraderShare)} of the swaps`); }
+    // With few traders, 10 wallets are most of them anyway, so this only means something on a busy token
+    if (swaps.topTraderShare > 0.8 && swaps.traders >= 40) { score -= 8; flags.push(`10 of ${swaps.traders} wallets made ${pct(swaps.topTraderShare)} of the swaps`); }
     const rtShare = swaps.roundTrippers / Math.max(1, swaps.traders);
     if (swaps.roundTrippers >= 3 && rtShare > 0.4) {
       score -= rtShare > 0.7 ? 18 : 10;
       flags.push(`${swaps.roundTrippers} of ${swaps.traders} wallets both bought and sold in ${window}, a common wash pattern`);
     }
-    // DCA bots and arbitrage repeat sizes too, so only flag it when they make most of the trading
-    if (swaps.repeatSizeWallets >= 2 && swaps.repeatSizeShare > 0.4) {
-      score -= swaps.repeatSizeShare > 0.7 ? 14 : 8;
-      flags.push(`${pct(swaps.repeatSizeShare)} of swaps come from ${swaps.repeatSizeWallets} wallets repeating the exact same size, which looks scripted`);
+    // Bots repeating one size are normal (DCA, arbitrage between pools). It is wash trading
+    // when the same bot buys AND sells, trading the token back and forth with itself.
+    if (swaps.washWallets >= 1 && swaps.washShare > 0.3) {
+      score -= swaps.washShare > 0.6 ? 18 : 10;
+      flags.push(`${pct(swaps.washShare)} of swaps come from ${swaps.washWallets} wallet${swaps.washWallets === 1 ? "" : "s"} buying and selling the same size back and forth`);
     }
     if (swaps.buyers > 0 && swaps.sellers === 0 && swaps.swaps >= 20) flags.push("Nobody sold in the latest swaps");
   } else if (swaps) {

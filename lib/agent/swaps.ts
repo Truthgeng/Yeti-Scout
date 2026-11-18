@@ -9,7 +9,7 @@ import type { SwapSignals } from "@/lib/types";
  * (a buy) or lost (a sell), so aggregator routes count the real trader, not the router.
  */
 const PAGE = 50;
-const PAGES = Number(process.env.SWAP_PAGES || "4"); // up to 200 recent swaps
+const PAGES = Number(process.env.SWAP_PAGES || "2"); // per pool: up to 100 recent transactions
 
 const QUERY = `query($pool: SuiAddress!, $before: String) {
   transactions(last: ${PAGE}, before: $before, filter: { affectedObject: $pool }) {
@@ -36,9 +36,19 @@ type Node = {
   } | null;
 };
 
-type Swap = { trader: string; side: "buy" | "sell"; amount: bigint; at: number };
+type Swap = { trader: string; digest?: string; side: "buy" | "sell"; amount: bigint; at: number };
 
-export async function swapSignals(coinType: string, pool: string): Promise<SwapSignals> {
+/**
+ * Reads the deepest pools (up to 3) side by side. One pool alone can be mostly
+ * arbitrage bots keeping prices in line with the others, which says little about
+ * who is really buying the token.
+ */
+export async function swapSignals(coinType: string, pools: string[]): Promise<SwapSignals> {
+  const lists = await Promise.all(pools.map((p) => poolSwaps(coinType, p)));
+  return summarise(pools.join(","), lists.flat(), "sui-graphql", pools.length);
+}
+
+async function poolSwaps(coinType: string, pool: string): Promise<Swap[]> {
   const want = normaliseCoinType(coinType);
   const swaps: Swap[] = [];
   let before: string | null = null;
@@ -59,6 +69,7 @@ export async function swapSignals(coinType: string, pool: string): Promise<SwapS
       if (amount === 0n) continue;
       swaps.push({
         trader,
+        digest: n.digest,
         side: amount > 0n ? "buy" : "sell",
         amount: amount > 0n ? amount : -amount,
         at: n.effects?.timestamp ? Date.parse(n.effects.timestamp) : NaN,
@@ -67,11 +78,12 @@ export async function swapSignals(coinType: string, pool: string): Promise<SwapS
     if (!conn?.pageInfo?.hasPreviousPage) break;
     before = conn.pageInfo.startCursor;
   }
-
-  return summarise(pool, swaps);
+  return swaps;
 }
 
-export function summarise(pool: string, swaps: Swap[], source: SwapSignals["source"] = "sui-graphql"): SwapSignals {
+export function summarise(pool: string, all: Swap[], source: SwapSignals["source"] = "sui-graphql", pools = 1): SwapSignals {
+  // A route through two of the pools shows up in both: count each transaction once
+  const swaps = [...new Map(all.map((s, i) => [s.digest ?? i, s])).values()];
   const byTrader = new Map<string, Swap[]>();
   for (const s of swaps) byTrader.set(s.trader, [...(byTrader.get(s.trader) ?? []), s]);
   const counts = [...byTrader.values()].map((l) => l.length).sort((a, b) => b - a);
@@ -80,8 +92,11 @@ export function summarise(pool: string, swaps: Swap[], source: SwapSignals["sour
   let roundTrippers = 0;
   let repeatSizeWallets = 0;
   let repeatSizeSwaps = 0;
+  let washWallets = 0;
+  let washSwaps = 0;
   for (const list of byTrader.values()) {
-    if (list.some((s) => s.side === "buy") && list.some((s) => s.side === "sell")) roundTrippers++;
+    const both = list.some((s) => s.side === "buy") && list.some((s) => s.side === "sell");
+    if (both) roundTrippers++;
     // 3+ swaps within 2% of the same size is how scripted volume usually looks
     if (list.length >= 3) {
       const sorted = [...list].sort((a, b) => (a.amount < b.amount ? -1 : 1));
@@ -90,7 +105,10 @@ export function summarise(pool: string, swaps: Swap[], source: SwapSignals["sour
         const prev = sorted[i - 1].amount;
         run = prev > 0n && (sorted[i].amount - prev) * 100n <= prev * 2n ? run + 1 : 1;
       }
-      if (run >= 3) { repeatSizeWallets++; repeatSizeSwaps += list.length; }
+      if (run >= 3) {
+        repeatSizeWallets++; repeatSizeSwaps += list.length;
+        if (both) { washWallets++; washSwaps += list.length; }
+      }
     }
   }
 
@@ -108,6 +126,9 @@ export function summarise(pool: string, swaps: Swap[], source: SwapSignals["sour
     roundTrippers,
     repeatSizeWallets,
     repeatSizeShare: swaps.length ? repeatSizeSwaps / swaps.length : 0,
+    washWallets,
+    washShare: swaps.length ? washSwaps / swaps.length : 0,
+    pools,
     source,
   };
 }

@@ -71,8 +71,8 @@ export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } 
           return socialSignals(tagging);
         })().catch((e) => { console.error("x search failed", e); errors.push("x"); return null; })
       : Promise.resolve(null),
-    input.coinType && market?.mainPool
-      ? lap("swaps", swapSignals(input.coinType, market.mainPool.id)).catch((e) => { console.error("swap read failed", e); errors.push("swaps"); return null; })
+    input.coinType && market?.topPools.length
+      ? lap("swaps", swapSignals(input.coinType, market.topPools)).catch((e) => { console.error("swap read failed", e); errors.push("swaps"); return null; })
       : Promise.resolve(null),
     handle && !input.handle
       ? fetchProfile(handle, receipts).catch(() => undefined)

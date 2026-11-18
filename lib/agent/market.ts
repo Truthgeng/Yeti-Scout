@@ -65,7 +65,8 @@ export async function marketSignals(coinType: string): Promise<MarketSignals> {
   ]);
 
   const sum = (f: (p: DexPair) => number | undefined) => pairs.reduce((a, p) => a + (f(p) ?? 0), 0);
-  const main = [...pairs].sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
+  const byDepth = [...pairs].sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
+  const main = byDepth[0];
   const asBase = pairs.find((p) => p.baseToken?.address && p.priceUsd);
   const created = pairs.map((p) => p.pairCreatedAt).filter((t): t is number => typeof t === "number" && t > 0);
   const oldest = created.length ? Math.min(...created) : undefined;
@@ -87,6 +88,7 @@ export async function marketSignals(coinType: string): Promise<MarketSignals> {
     mainPool: main?.pairAddress
       ? { id: main.pairAddress, dex: main.dexId ?? "dex", liquidityUsd: main.liquidity?.usd ?? 0, createdAt: main.pairCreatedAt }
       : undefined,
+    topPools: byDepth.filter((p) => p.pairAddress && (p.liquidity?.usd ?? 0) > 500).slice(0, 3).map((p) => p.pairAddress!),
     ageDays: oldest ? Math.floor((Date.now() - oldest) / DAY) : undefined,
     holders: hold.count,
     top10HolderShare: hold.top10,
