@@ -1,0 +1,6 @@
+[package]
+name = "yeti_scout"
+edition = "2024"
+
+[addresses]
+yeti_scout = "0x0"
