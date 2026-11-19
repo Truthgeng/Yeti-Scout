@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:sources": "tsx scripts/test-sources.ts",
     "wallet": "tsx scripts/new-sui-wallet.ts",
-    "publish:move": "tsx scripts/publish-move.ts"
+    "publish:move": "tsx scripts/publish-move.ts",
+    "test:publish": "tsx scripts/test-publish.ts"
   },
   "dependencies": {
     "@celo/buy-core": "0.8.5",
