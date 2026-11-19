@@ -24,10 +24,14 @@ export const subjectOf = (i: CheckInput, market?: MarketSignals | null) =>
  * One scan. Returns as soon as the data is in, with the rule verdict and a token
  * the page uses to have the AI summary written (and the report recorded on Sui) next.
  */
-export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } = {}): Promise<Report> {
-  if (isMock()) return mockReport(input);
+/** Steps of a scan, reported to the page as each one finishes */
+export type Stage = "pools" | "swaps" | "x" | "score";
+
+export async function runCheck(input: CheckInput, opts: { skipCache?: boolean; onStage?: (s: Stage, ok: boolean) => void } = {}): Promise<Report> {
+  const stage = (s: Stage, ok = true) => { try { opts.onStage?.(s, ok); } catch { /* the page went away */ } };
+  if (isMock()) { (["pools", "swaps", "x", "score"] as Stage[]).forEach((s) => stage(s)); return mockReport(input); }
   const cached = opts.skipCache ? null : getCached(input);
-  if (cached) return { ...cached, summaryToken: undefined };
+  if (cached) { (["pools", "swaps", "x", "score"] as Stage[]).forEach((s) => stage(s)); return { ...cached, summaryToken: undefined }; }
   const sandbox = isSandbox();
   const t0 = Date.now();
   const took: Record<string, number> = {};
@@ -38,7 +42,9 @@ export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } 
   // Step 1: the market (gives us the main pool and, often, the project's X handle) and the X profile
   const [market, givenProfile] = await Promise.all([
     input.coinType
-      ? lap("market", marketSignals(input.coinType)).catch((e) => { console.error("market read failed", e); errors.push("market"); return null; })
+      ? lap("market", marketSignals(input.coinType))
+          .then((m) => { stage("pools"); return m; })
+          .catch((e) => { console.error("market read failed", e); errors.push("market"); stage("pools", false); return null; })
       : Promise.resolve(null),
     input.handle
       ? lap("profile", fetchProfile(input.handle.toLowerCase(), receipts)).catch((e) => { console.error("profile lookup failed", e); return undefined; })
@@ -73,11 +79,15 @@ export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } 
           postsFound = found.length;
           const tagging = found.filter((p) => p.author !== handle && (p.bodyMentions ?? []).includes(handle));
           postsTagging = tagging.length;
-          return socialSignals(tagging);
-        })().catch((e) => { console.error("x search failed", e); errors.push("x"); return null; })
+          const sig = socialSignals(tagging);
+          stage("x");
+          return sig;
+        })().catch((e) => { console.error("x search failed", e); errors.push("x"); stage("x", false); return null; })
       : Promise.resolve(null),
     input.coinType && market?.topPools.length
-      ? lap("swaps", swapSignals(input.coinType, market.topPools)).catch((e) => { console.error("swap read failed", e); errors.push("swaps"); return null; })
+      ? lap("swaps", swapSignals(input.coinType, market.topPools))
+          .then((w) => { stage("swaps"); return w; })
+          .catch((e) => { console.error("swap read failed", e); errors.push("swaps"); stage("swaps", false); return null; })
       : Promise.resolve(null),
     // A handle found on DexScreener is the project's own listing, so it needs no paid profile lookup
     Promise.resolve(undefined as Profile | null | undefined),
@@ -95,6 +105,7 @@ export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } 
   const outInput: CheckInput = { ...input, handle: handle ?? input.handle };
   const subject = subjectOf(outInput, market);
   const verdict = ruleVerdict(social, onchain);
+  stage("score");
   const summaryToken = !sandbox ? makeSummaryToken({ input: outInput, subject, social, market, swaps, score: verdict.score }) : undefined;
   console.log("check timing", JSON.stringify({ subject, ms: Date.now() - t0, steps: took, errors }));
 

@@ -23,15 +23,38 @@ function parseInput(body: any): CheckInput | string {
   return { handle: handle || undefined, coinType: coin ? normaliseCoinType(coin) : undefined };
 }
 
-async function scan(input: CheckInput) {
-  try {
-    const report = await runCheck(input);
-    return NextResponse.json(report);
-  } catch (e) {
-    if (e instanceof CheckError) return NextResponse.json({ error: e.message }, { status: e.status });
-    console.error(e);
-    return NextResponse.json({ error: "The scan failed. It didn't count against your scans." }, { status: 502 });
-  }
+/**
+ * Runs the scan and streams its progress as newline-separated JSON, so the page can
+ * tick off each step as it really finishes:
+ *   {"type":"stage","stage":"pools","ok":true}  ...  {"type":"done","report":{...}}
+ *   or {"type":"error","error":"...","refund":"<cookie>"}
+ * onDone runs only when the scan succeeded (used to count a holder's scan).
+ */
+function scan(input: CheckInput, extra: { headers?: Headers; refund?: string; onDone?: () => void } = {}) {
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const send = (o: unknown) => { try { ctrl.enqueue(enc.encode(JSON.stringify(o) + "\n")); } catch { /* closed */ } };
+      try {
+        const report = await runCheck(input, { onStage: (stage, ok) => send({ type: "stage", stage, ok }) });
+        extra.onDone?.();
+        send({ type: "done", report });
+      } catch (e) {
+        if (!(e instanceof CheckError)) console.error(e);
+        send({
+          type: "error",
+          error: e instanceof CheckError ? e.message : "The scan failed. It didn't count against your scans.",
+          ...(extra.refund !== undefined ? { refund: extra.refund } : {}),
+        });
+      } finally {
+        ctrl.close();
+      }
+    },
+  });
+  const headers = extra.headers ?? new Headers();
+  headers.set("content-type", "application/x-ndjson; charset=utf-8");
+  headers.set("cache-control", "no-store");
+  return new Response(stream, { headers });
 }
 
 /**
@@ -54,9 +77,7 @@ export async function POST(req: NextRequest) {
       if (scansLeft(holder) === 0) {
         return NextResponse.json({ error: "You've used today's scans. They reset at midnight UTC." }, { status: 429 });
       }
-      const res = await scan(input);
-      if (res.ok) useScan(holder);
-      return res;
+      return scan(input, { onDone: () => useScan(holder) });
     }
     // Signed in but no longer holding enough: falls through to the free scans
   }
@@ -71,9 +92,13 @@ export async function POST(req: NextRequest) {
   if (!takeDailySlot()) {
     return NextResponse.json({ error: "Free scans are used up for today. Connect a wallet holding LOFI to keep going.", needsLofi: true }, { status: 429 });
   }
-  const res = await scan(input);
-  if (res.ok) {
-    res.cookies.set(COOKIE, nextCookie(cookie), { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: 60 * 60 * 24 * 365 });
-  }
-  return res;
+  // The free scan is counted up front (headers go out before the stream). If it fails,
+  // the error carries the old cookie so the page can hand the scan back via /api/free.
+  const headers = new Headers();
+  headers.append("set-cookie", freeCookieHeader(nextCookie(cookie)));
+  return scan(input, { headers, refund: cookie ?? "" });
+}
+
+function freeCookieHeader(value: string) {
+  return `${COOKIE}=${value}; Path=/; Max-Age=${60 * 60 * 24 * 365}; HttpOnly; Secure; SameSite=Lax`;
 }

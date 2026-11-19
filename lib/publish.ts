@@ -40,6 +40,8 @@ const cfg = () => ({
   key: process.env.PUBLISHER_PRIVATE_KEY,
 });
 
+export const publishNetwork = () => cfg().network;
+
 export const publishingOn = () => {
   const c = cfg();
   return !!(c.pkg && c.scout && c.cap && c.key);
@@ -126,13 +128,99 @@ export async function publishReport(r: Report): Promise<Onchain> {
         tx.object.clock(),
       ],
     });
-    const result = await signer.signAndExecuteTransaction({ transaction: tx, client });
+    const result = await client.signAndExecuteTransaction({ transaction: tx, signer, include: { effects: true, objectTypes: true } });
     const done = result.Transaction ?? result.FailedTransaction;
     out.txDigest = done?.digest;
     if (result.$kind === "FailedTransaction") out.error = "The Sui transaction failed";
+    else {
+      // The frozen ScoutReport object: its id is the report's permanent, shareable address
+      const types = result.Transaction?.objectTypes ?? {};
+      out.reportId = (result.Transaction?.effects?.changedObjects ?? [])
+        .find((o) => o.idOperation === "Created" && types[o.objectId]?.endsWith("::report::ScoutReport"))?.objectId;
+    }
   } catch (e) {
     console.error("publish failed", e);
     out.error = e instanceof Error ? e.message.slice(0, 200) : String(e);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Reading reports back from Sui (the recent feed and shared report pages)
+// ---------------------------------------------------------------------------
+
+async function publishGql<T = any>(query: string, variables: Record<string, unknown>): Promise<T> {
+  const res = await fetch(cfg().graphql, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(12_000),
+  });
+  const json = await res.json();
+  if (json.errors?.length) throw new Error(json.errors.map((e: any) => e.message).join("; ").slice(0, 200));
+  return json.data as T;
+}
+
+export type RecentReport = {
+  reportId: string;
+  number: number;
+  coinType: string;
+  handle: string;
+  symbol: string;
+  score: number;
+  verdict: string;
+  walrusBlobId: string;
+  scannedAt: number;
+  txDigest?: string;
+};
+
+const toRecent = (j: any, digest?: string): RecentReport => ({
+  reportId: j.report_id ?? j.id,
+  number: Number(j.number),
+  coinType: j.coin_type ?? "",
+  handle: j.x_handle ?? "",
+  symbol: j.symbol ?? "",
+  score: Number(j.score),
+  verdict: j.verdict ?? "",
+  walrusBlobId: j.walrus_blob_id ?? "",
+  scannedAt: Number(j.scanned_at_ms),
+  txDigest: digest,
+});
+
+/** The latest verdicts, read from the package's ReportPublished events on Sui */
+export async function recentReports(limit = 12): Promise<RecentReport[]> {
+  const c = cfg();
+  if (!c.pkg) return [];
+  const data = await publishGql<any>(
+    `query($t: String!, $n: Int!) { events(last: $n, filter: { type: $t }) { nodes { contents { json } transaction { digest } } } }`,
+    { t: `${c.pkg}::report::ReportPublished`, n: limit },
+  );
+  // Report #1 was the setup test with sample data; FEED_SKIP lists any others to keep off the feed
+  const skip = new Set((process.env.FEED_SKIP ?? "1").split(",").map((x) => Number(x.trim())).filter(Boolean));
+  return ((data?.events?.nodes ?? []) as any[])
+    .map((n) => toRecent(n.contents?.json ?? {}, n.transaction?.digest))
+    .filter((r) => !skip.has(r.number))
+    .reverse();
+}
+
+/** One ScoutReport object by id, plus its full report from Walrus when available */
+export async function readReport(id: string): Promise<{ record: RecentReport; full: unknown | null } | null> {
+  const data = await publishGql<any>(
+    `query($id: SuiAddress!) { object(address: $id) { previousTransaction { digest } asMoveObject { contents { json type { repr } } } } }`,
+    { id },
+  );
+  const obj = data?.object;
+  const contents = obj?.asMoveObject?.contents;
+  if (!contents?.type?.repr?.endsWith("::report::ScoutReport")) return null;
+  const pkg = cfg().pkg?.toLowerCase().replace(/^0x0*/, "");
+  if (pkg && !contents.type.repr.toLowerCase().replace(/^0x0*/, "").startsWith(pkg)) return null; // only our own package
+  const record = toRecent({ ...contents.json, report_id: id }, obj.previousTransaction?.digest);
+  let full: unknown | null = null;
+  if (record.walrusBlobId) {
+    try {
+      const res = await fetch(walrusUrl(record.walrusBlobId), { signal: AbortSignal.timeout(12_000) });
+      if (res.ok) full = await res.json();
+    } catch { /* the Sui record alone still shows the verdict */ }
+  }
+  return { record, full };
 }
