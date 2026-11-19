@@ -44,8 +44,12 @@ type Swap = { trader: string; digest?: string; side: "buy" | "sell"; amount: big
  * who is really buying the token.
  */
 export async function swapSignals(coinType: string, pools: string[]): Promise<SwapSignals> {
-  const lists = await Promise.all(pools.map((p) => poolSwaps(coinType, p)));
-  return summarise(pools.join(","), lists.flat(), "sui-graphql", pools.length);
+  // One unreadable pool shouldn't sink the others
+  const results = await Promise.allSettled(pools.map((p) => poolSwaps(coinType, p)));
+  const ok = results.filter((r): r is PromiseFulfilledResult<Swap[]> => r.status === "fulfilled");
+  if (!ok.length) throw (results[0] as PromiseRejectedResult).reason;
+  results.forEach((r, i) => r.status === "rejected" && console.warn("pool read failed", pools[i], String(r.reason).slice(0, 160)));
+  return summarise(pools.join(","), ok.flatMap((r) => r.value), "sui-graphql", ok.length);
 }
 
 async function poolSwaps(coinType: string, pool: string): Promise<Swap[]> {

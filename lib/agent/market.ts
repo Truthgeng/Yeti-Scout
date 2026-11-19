@@ -117,7 +117,8 @@ export async function marketSignals(coinType: string): Promise<MarketSignals> {
     mainPool: main?.pairAddress
       ? { id: main.pairAddress, dex: main.dexId ?? "dex", liquidityUsd: main.liquidity?.usd ?? 0, createdAt: main.pairCreatedAt }
       : undefined,
-    topPools: byDepth.filter((p) => p.pairAddress && (p.liquidity?.usd ?? 0) > 500).slice(0, 3).map((p) => p.pairAddress!),
+    // Only plain Sui object ids: some DEXes list pools under longer composite ids Sui's API can't read
+    topPools: byDepth.filter((p) => p.pairAddress && /^0x[0-9a-fA-F]{1,64}$/.test(p.pairAddress) && (p.liquidity?.usd ?? 0) > 500).slice(0, 3).map((p) => p.pairAddress!),
     ageDays: oldest ? Math.floor((Date.now() - oldest) / DAY) : undefined,
     holders: hold.count,
     ...(allVolume !== undefined
