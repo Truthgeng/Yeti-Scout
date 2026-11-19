@@ -44,7 +44,29 @@ function agentAccount() {
  * In test mode it pays with free test USDC on Celo Sepolia, and asks the
  * gateway's faucet for a top-up when the test wallet runs low.
  */
-export async function paidPost(
+/**
+ * USDT on Celo signs its payments with a counter that goes up by one each time,
+ * so two payments signed at the same moment get the same number and one is
+ * rejected. USDC uses random numbers and doesn't have this problem. When paying
+ * in anything but USDC, payments go out one at a time.
+ */
+let payQueue: Promise<unknown> = Promise.resolve();
+const serialPay = () => (process.env.AGENT_PAY_TOKEN || "USDC").toUpperCase() !== "USDC" && !isSandbox();
+
+export function paidPost(
+  service: PaidCall["service"],
+  path: string,
+  body: unknown,
+  maxWhole: string,
+  receipts: PaidCall[],
+): Promise<unknown> {
+  if (!serialPay()) return paidPostNow(service, path, body, maxWhole, receipts);
+  const run = payQueue.then(() => paidPostNow(service, path, body, maxWhole, receipts));
+  payQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function paidPostNow(
   service: PaidCall["service"],
   path: string,
   body: unknown,

@@ -60,10 +60,15 @@ export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } 
     handle
       ? (async () => {
           const q = `@${handle} -from:${handle} within_time:7d`;
-          const [latest, top] = await Promise.all([
+          // Either search on its own is enough to judge from, so one failing doesn't drop the X section
+          const results = await Promise.allSettled([
             lap("xLatest", searchXPages(q, "latest", 1, receipts)),
             lap("xTop", searchXPages(q, "top", 1, receipts)),
           ]);
+          const ok = results.filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof searchXPages>>> => r.status === "fulfilled");
+          if (!ok.length) throw (results[0] as PromiseRejectedResult).reason;
+          results.forEach((r) => r.status === "rejected" && console.error("one x search failed", r.reason));
+          const [latest, top] = [ok[0].value, ok[1]?.value ?? []];
           const found = [...new Map([...latest, ...top].map((p) => [p.id ?? p.text, p])).values()];
           postsFound = found.length;
           const tagging = found.filter((p) => p.author !== handle && (p.bodyMentions ?? []).includes(handle));
