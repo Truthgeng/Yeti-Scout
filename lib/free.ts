@@ -1,3 +1,4 @@
+import { sessionSecret } from "@/lib/secret";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 /**
@@ -14,10 +15,7 @@ export const FREE_CHECKS = Number(process.env.FREE_CHECKS ?? "2");
 const DAILY_LIMIT = Number(process.env.FREE_DAILY_LIMIT ?? "300");
 export const COOKIE = "ys_free";
 
-function secret() {
-  // Any stable server-only value works. FREE_CHECK_SECRET is preferred.
-  return process.env.SESSION_SECRET || process.env.AGENT_PRIVATE_KEY || "dev-only-secret";
-}
+const secret = sessionSecret;
 
 const sign = (n: number) => createHmac("sha256", secret()).update(`free:${n}`).digest("base64url").slice(0, 22);
 

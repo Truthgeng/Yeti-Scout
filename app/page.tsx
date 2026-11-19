@@ -373,9 +373,6 @@ export default function Home() {
                 ) : (
                   <p className="muted">Not recorded on Sui for this scan.</p>
                 )}
-                {report.paidCalls.length > 0 && (
-                  <p className="fine">The agent paid for {report.paidCalls.length} data call{report.paidCalls.length === 1 ? "" : "s"} (X and AI) through buy, ${(report.paidCalls.reduce((a, c) => a + Number(c.amountAtomic), 0) / 1e6).toFixed(3)} total.</p>
-                )}
               </div>
             </div>
           </section>

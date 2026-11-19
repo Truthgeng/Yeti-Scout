@@ -65,9 +65,9 @@ async function storeOnWalrus(report: unknown): Promise<string> {
   return id;
 }
 
-/** What goes on Walrus: the full report, minus the one-time token */
+/** What goes on Walrus: the signals and verdict. Data bills and the one-time token stay private. */
 export function publicReport(r: Report) {
-  const { summaryToken, cachedAt, ...rest } = r;
+  const { summaryToken, cachedAt, paidCalls, ...rest } = r;
   return { app: "Yeti Scout", version: 1, ...rest };
 }
 

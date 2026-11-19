@@ -1,3 +1,4 @@
+import { sessionSecret } from "@/lib/secret";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
 import { SuiGraphQLClient } from "@mysten/sui/graphql";
@@ -20,9 +21,7 @@ export const HOLDER_COOKIE = "ys_holder";
 const SESSION_HOURS = 24;
 const SIGN_IN_WINDOW_MS = 10 * 60 * 1000;
 
-function secret() {
-  return process.env.SESSION_SECRET || process.env.AGENT_PRIVATE_KEY || "dev-only-secret";
-}
+const secret = sessionSecret;
 const mac = (body: string) => createHmac("sha256", secret()).update(`holder:${body}`).digest("base64url").slice(0, 32);
 
 // ---------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+import { sessionSecret } from "@/lib/secret";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 /**
@@ -8,9 +9,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 const TTL_MS = 10 * 60 * 1000;
 const used = new Set<string>();
 
-function secret() {
-  return process.env.SESSION_SECRET || "dev-only-secret";
-}
+const secret = sessionSecret;
 const digest = (data: unknown) => createHash("sha256").update(JSON.stringify(data)).digest("base64url");
 const mac = (body: string) => createHmac("sha256", secret()).update(`summary:${body}`).digest("base64url");
 

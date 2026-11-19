@@ -75,9 +75,9 @@ Walrus testnet has a free public publisher, used by default. For mainnet, set `W
 | Mode | Settings | What happens |
 |---|---|---|
 | Demo | `MOCK=1` (default) | Sample data, open to everyone |
-| Test | `MOCK=0`, `SANDBOX=1` | Real Sui and X data, X paid with free test USDC. Open to everyone |
+| Test | `MOCK=0`, `SANDBOX=1` | Real Sui and X data on a free test data budget. Open to everyone |
 | Live | `MOCK=0`, `SANDBOX=0` | Everything real. Hold to scan after the free scans |
 
-X data and the AI summary are bought per call through [buy](https://usebuy.ai) by the agent's own wallet, the same setup as [traction-check](https://github.com/Truthgeng/traction-check), which won Celo's Agents on Open Rails hackathon.
+X data and the AI summary come from paid APIs, billed per call to the server's own data budget (`AGENT_PRIVATE_KEY`, `DAILY_SPEND_CAP`). Users never pay for data: the only thing they ever need is LOFI.
 
 Not financial advice. A clean sniff test doesn't make a token safe.
