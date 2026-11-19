@@ -53,7 +53,7 @@ export function mockReport(input: CheckInput): Report {
   if (input.coinType) {
     market = {
       symbol: input.coinType.split("::").pop(), name: "Sample token", priceUsd: 0.004,
-      marketCapUsd: farmed ? 2_400_000 : 4_100_000, liquidityUsd: farmed ? 9_000 : 210_000,
+      marketCapUsd: farmed ? 2_400_000 : 4_100_000, fdvUsd: farmed ? 6_000_000 : 4_100_000, liquidityUsd: farmed ? 9_000 : 210_000,
       volume24hUsd: farmed ? 41_000 : 68_000, buys24h: farmed ? 9 : 410, sells24h: farmed ? 6 : 330, pools: farmed ? 1 : 4,
       mainPool: { id: "0xmock", dex: "cetus", liquidityUsd: farmed ? 9_000 : 150_000 }, topPools: ["0xmock"],
       ageDays: farmed ? 4 : 360, holders: farmed ? 310 : 18_400, top10HolderShare: farmed ? 0.82 : 0.31,

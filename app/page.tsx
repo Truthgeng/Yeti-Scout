@@ -315,12 +315,14 @@ export default function Home() {
                 <div className="panel">
                   <h3>Market</h3>
                   <div className="stats">
-                    <div><b>{usd(report.market.liquidityUsd)}</b><span>liquidity</span></div>
-                    <div><b>{usd(report.market.volume24hUsd)}</b><span>24h DEX volume</span></div>
+                    <div><b>{usd(report.market.marketCapUsd)}</b><span>market cap</span></div>
+                    <div><b>{usd(report.market.fdvUsd)}</b><span>FDV</span></div>
+                    <div><b>{usd(report.market.liquidityUsd)}</b><span>liquidity, all pools</span></div>
+                    <div><b>{usd(report.market.volume24hUsd)}</b><span>24h DEX volume, all pools</span></div>
                     <div><b>{report.market.holders !== undefined ? compact(report.market.holders) : "?"}</b><span>holders</span></div>
                     <div><b>{report.market.top10HolderShare !== undefined ? `${Math.round(report.market.top10HolderShare * 100)}%` : "?"}</b><span>held by top 10</span></div>
                   </div>
-                  <p className="fine">{report.market.pools} pool{report.market.pools === 1 ? "" : "s"}{report.market.mainPool && <> · main pool on {report.market.mainPool.dex}</>}{report.market.ageDays !== undefined && <> · {age(report.market.ageDays)} old</>}</p>
+                  <p className="fine">Totals across {report.market.pools} pool{report.market.pools === 1 ? "" : "s"}, so a single pair page (like LOFI/SUI on Cetus) shows less{report.market.mainPool && <> · main pool on {report.market.mainPool.dex}</>}{report.market.ageDays !== undefined && <> · {age(report.market.ageDays)} old</>}</p>
                   {report.market.cexVolume24hUsd !== undefined && report.market.totalVolume24hUsd ? (
                     <p className="fine cex">
                       24h volume everywhere: {usd(report.market.totalVolume24hUsd)}. Sui DEXes {usd(report.market.volume24hUsd)} · centralised exchanges {usd(report.market.cexVolume24hUsd)}

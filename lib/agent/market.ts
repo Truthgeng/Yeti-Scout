@@ -108,6 +108,7 @@ export async function marketSignals(coinType: string): Promise<MarketSignals> {
     name: asBase?.baseToken?.name,
     priceUsd: asBase?.priceUsd ? Number(asBase.priceUsd) : undefined,
     marketCapUsd: asBase?.marketCap ?? asBase?.fdv,
+    fdvUsd: asBase?.fdv ?? asBase?.marketCap,
     liquidityUsd: sum((p) => p.liquidity?.usd),
     volume24hUsd: sum((p) => p.volume?.h24),
     buys24h: sum((p) => p.txns?.h24?.buys),

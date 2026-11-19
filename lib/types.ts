@@ -71,6 +71,7 @@ export type MarketSignals = {
   name?: string;
   priceUsd?: number;
   marketCapUsd?: number;
+  fdvUsd?: number;
   liquidityUsd: number; // across all pools
   volume24hUsd: number;
   buys24h: number;
