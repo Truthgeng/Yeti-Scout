@@ -125,6 +125,17 @@ async function paidPostNow(
   marks.done = Date.now() - t0;
   console.log("paid call", service, JSON.stringify(marks));
   if (!res.ok) {
+    if (res.status === 402) {
+      // Which tokens this service takes, so a token mismatch shows up in the logs
+      try {
+        const j = JSON.parse(text);
+        console.error("payment refused", service, JSON.stringify({
+          paidWith: process.env.AGENT_PAY_TOKEN || "USDC",
+          error: j.error,
+          accepts: (j.accepts ?? []).map((a: any) => ({ network: a.network, asset: a.asset, amount: a.maxAmountRequired, name: a.extra?.name })),
+        }));
+      } catch { /* not JSON */ }
+    }
     // Do not retry. Report what came back so it can be checked by hand.
     throw new Error(`${service} returned ${res.status}: ${text.slice(0, 300)}`);
   }
