@@ -27,7 +27,7 @@ Anyone on Sui about to buy into a token because their timeline won't stop talkin
 
 - Everyone gets 2 free scans, no wallet needed.
 - After that, connect a Sui wallet (Phantom, Slush, Suiet...) and sign one message. Nothing is sent and nothing leaves the wallet.
-- A wallet holding at least $3 of $LOFI gets 20 scans a day. The balance is checked again on every scan, so LOFI moved out of the wallet stops counting.
+- A wallet holding at least $1 of $LOFI gets 20 scans a day. The balance is checked again on every scan, so LOFI moved out of the wallet stops counting.
 
 The dollar amount, daily scans and free scans are settings (`HOLD_USD`, `HOLDER_DAILY_SCANS`, `FREE_CHECKS`).
 

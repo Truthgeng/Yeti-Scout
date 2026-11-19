@@ -15,7 +15,7 @@ import { signInMessage } from "@/lib/sign-in";
  * wallet stops counting straight away.
  */
 
-export const HOLD_USD = Number(process.env.HOLD_USD || "3");
+export const HOLD_USD = Number(process.env.HOLD_USD || "1");
 export const HOLDER_DAILY_SCANS = Number(process.env.HOLDER_DAILY_SCANS || "20");
 export const HOLDER_COOKIE = "ys_holder";
 const SESSION_HOURS = 24;
@@ -48,7 +48,7 @@ export async function checkHolding(address: string): Promise<Holding> {
   const [raw, needed] = await Promise.all([coinBalance(address, LOFI_COIN_TYPE), lofiNeeded()]);
   const lofi = Number(raw) / 10 ** LOFI_DECIMALS;
   // No price available: fall back to a fixed amount so the gate never locks everyone out
-  const min = needed ?? Number(process.env.HOLD_FALLBACK_LOFI || "750");
+  const min = needed ?? Number(process.env.HOLD_FALLBACK_LOFI || "150");
   return { address: normaliseAddress(address), lofi, needed: min, holds: lofi >= min };
 }
 
