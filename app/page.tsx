@@ -302,7 +302,12 @@ export default function Home() {
                   <p className="summary">{report.verdict.summary}</p>
                   {writing && <p className="writing">The agent is writing its own read and recording this on Sui…</p>}
                   {report.partial && <p className="hint warn">One data source failed, so this scan may be incomplete.</p>}
-                  <a className="btn small" href={shareUrl(report)} target="_blank" rel="noreferrer">Share on X</a>
+                  <div className="verdict-actions">
+                    {report.input.coinType === LOFI && (
+                      <a className="btn small primary" href={BUY_LOFI} target="_blank" rel="noreferrer">Buy $LOFI on Cetus</a>
+                    )}
+                    <a className="btn small" href={shareUrl(report)} target="_blank" rel="noreferrer">Share on X</a>
+                  </div>
                 </div>
               </div>
 

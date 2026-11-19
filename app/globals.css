@@ -174,3 +174,4 @@ h1 { font: 700 clamp(44px, 6.4vw, 84px)/0.98 var(--display); letter-spacing: -0.
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .fine.cex { color: var(--frost); }
+.verdict-actions { display: flex; flex-wrap: wrap; gap: 10px; }
