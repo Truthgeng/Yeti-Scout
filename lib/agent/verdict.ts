@@ -66,6 +66,12 @@ export function ruleScore(social: SocialSignals | null, { market, swaps }: Oncha
       if (market.top10HolderShare > 0.7 && !established) { score -= 10; flags.push(`Top 10 wallets hold ${pct(market.top10HolderShare)} of the supply`); }
       else if (market.top10HolderShare < 0.35) { score += 5; positives.push(`Supply is spread out: top 10 wallets hold ${pct(market.top10HolderShare)}`); }
     }
+    // Exchange-reported volume can't be checked onchain, so it doesn't move the score,
+    // but a small token "trading" several times its market cap off-chain is worth saying out loud
+    if (market.cexVolume24hUsd && market.marketCapUsd && market.cexVolume24hUsd > 1.5 * market.marketCapUsd
+        && market.cexVolume24hUsd > 20 * Math.max(1, market.volume24hUsd)) {
+      flags.push(`Exchanges report ${usd(market.cexVolume24hUsd)} of 24h volume, ${(market.cexVolume24hUsd / market.marketCapUsd).toFixed(1)}x the market cap and far above the ${usd(market.volume24hUsd)} traded onchain. Volume like that is usually not real (not scored, as it can't be checked)`);
+    }
     if (market.holders !== undefined && market.holders > 5_000) positives.push(`${market.holders.toLocaleString("en-US")} holders`);
   } else if (market) {
     flags.push("No DEX pools found for this token on Sui");
