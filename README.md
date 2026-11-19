@@ -56,23 +56,17 @@ npm run test:sources -- <coin>  # any other coin type
 
 ## Publish the Move package
 
-You need the Sui CLI (`brew install sui`).
+No Sui CLI needed: the package is compiled to `move/bytecode.json` and published from Node.
 
 ```bash
-npm run wallet                      # makes a fresh publisher wallet, prints address + key
-sui keytool import <suiprivkey...> ed25519
-sui client switch --address <address>
-sui client switch --env testnet     # or mainnet
-sui client faucet                   # testnet only; on mainnet send ~1 SUI to the address
-cd move && sui move test && sui client publish
+npm run wallet            # makes a publisher wallet, saves its key to .env.local, prints the address
+                          # testnet: get free SUI at https://faucet.sui.io (mainnet: send ~0.5 SUI)
+npm run publish:move      # publishes on testnet; `npm run publish:move -- mainnet` for mainnet
 ```
 
-From the publish output, copy into Vercel env:
-- `SCOUT_PACKAGE_ID`: the published package id
-- `SCOUT_OBJECT_ID`: the shared `report::Scout` object
-- `SCOUT_ADMIN_CAP_ID`: the `report::AdminCap` object
-- `PUBLISHER_PRIVATE_KEY`: the key from `npm run wallet`
-- `PUBLISH_NETWORK`: `testnet` or `mainnet`
+It prints the four values to copy into Vercel: `PUBLISH_NETWORK`, `SCOUT_PACKAGE_ID`, `SCOUT_OBJECT_ID`, `SCOUT_ADMIN_CAP_ID`. Also copy `PUBLISHER_PRIVATE_KEY` from `.env.local`.
+
+To rebuild the bytecode after changing the Move code: `cd move && sui move test && sui move build --dump-bytecode-as-base64 --no-tree-shaking -e testnet` and save the JSON as `move/bytecode.json`.
 
 Walrus testnet has a free public publisher, used by default. For mainnet, set `WALRUS_PUBLISHER_URL` to a publisher you run or trust.
 
