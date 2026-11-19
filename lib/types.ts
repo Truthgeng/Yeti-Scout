@@ -82,6 +82,9 @@ export type MarketSignals = {
   ageDays?: number; // age of the oldest pool
   holders?: number;
   top10HolderShare?: number; // 0 to 1
+  /** All-exchange 24h volume from CoinGecko, and the part of it that is off-chain on centralised exchanges */
+  totalVolume24hUsd?: number;
+  cexVolume24hUsd?: number;
   /** X handle the token lists on DexScreener, when it has one */
   listedHandle?: string;
 };

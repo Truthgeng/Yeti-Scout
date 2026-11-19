@@ -316,7 +316,14 @@ export default function Home() {
                     <div><b>{report.market.top10HolderShare !== undefined ? `${Math.round(report.market.top10HolderShare * 100)}%` : "?"}</b><span>held by top 10</span></div>
                   </div>
                   <p className="fine">{report.market.pools} pool{report.market.pools === 1 ? "" : "s"}{report.market.mainPool && <> · main pool on {report.market.mainPool.dex}</>}{report.market.ageDays !== undefined && <> · {age(report.market.ageDays)} old</>}</p>
-                  <p className="fine">Onchain Sui DEX trading only. Sites like CoinGecko also count centralised exchanges, so their volume and price can differ.</p>
+                  {report.market.cexVolume24hUsd !== undefined && report.market.totalVolume24hUsd ? (
+                    <p className="fine cex">
+                      24h volume everywhere: {usd(report.market.totalVolume24hUsd)}. Sui DEXes {usd(report.market.volume24hUsd)} · centralised exchanges {usd(report.market.cexVolume24hUsd)}
+                      {" "}({Math.round((report.market.cexVolume24hUsd / report.market.totalVolume24hUsd) * 100)}%), which happens off-chain and can't be checked, so it isn't scored.
+                    </p>
+                  ) : (
+                    <p className="fine">Onchain Sui DEX trading only. Sites like CoinGecko also count centralised exchanges, so their volume can be higher.</p>
+                  )}
                 </div>
               )}
 

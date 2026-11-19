@@ -58,10 +58,38 @@ async function holders(coinType: string): Promise<{ count?: number; top10?: numb
   };
 }
 
+/**
+ * Total 24h volume across every exchange, from CoinGecko. Only used to show how much
+ * trading happens off-chain on centralised exchanges; it never changes the score.
+ * Cached for 10 minutes to stay inside CoinGecko's free rate limit. Optional:
+ * a failure (or a token CoinGecko doesn't list) just leaves the line off the report.
+ */
+const cgCache = new Map<string, { at: number; usd: number | null }>();
+async function allExchangeVolume(coinType: string): Promise<number | undefined> {
+  const hit = cgCache.get(coinType);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.usd ?? undefined;
+  const key = process.env.COINGECKO_API_KEY;
+  const base = key?.startsWith("CG-") && process.env.COINGECKO_PRO !== "1" ? "https://api.coingecko.com/api/v3" : key ? "https://pro-api.coingecko.com/api/v3" : "https://api.coingecko.com/api/v3";
+  const res = await fetch(
+    `${base}/coins/sui/contract/${encodeURIComponent(coinType)}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false`,
+    {
+      headers: { accept: "application/json", ...(key ? (base.includes("pro-api") ? { "x-cg-pro-api-key": key } : { "x-cg-demo-api-key": key }) : {}) },
+      signal: AbortSignal.timeout(8_000),
+    },
+  );
+  if (res.status === 404) { cgCache.set(coinType, { at: Date.now(), usd: null }); return undefined; }
+  if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+  const usd = Number((await res.json())?.market_data?.total_volume?.usd);
+  const value = Number.isFinite(usd) && usd > 0 ? usd : null;
+  cgCache.set(coinType, { at: Date.now(), usd: value });
+  return value ?? undefined;
+}
+
 export async function marketSignals(coinType: string): Promise<MarketSignals> {
-  const [pairs, hold] = await Promise.all([
+  const [pairs, hold, allVolume] = await Promise.all([
     dexPairs(coinType),
     holders(coinType).catch((e) => { console.warn("holders lookup failed", String(e)); return {} as { count?: number; top10?: number }; }),
+    allExchangeVolume(coinType).catch((e) => { console.warn("coingecko lookup failed", String(e)); return undefined; }),
   ]);
 
   const sum = (f: (p: DexPair) => number | undefined) => pairs.reduce((a, p) => a + (f(p) ?? 0), 0);
@@ -91,6 +119,9 @@ export async function marketSignals(coinType: string): Promise<MarketSignals> {
     topPools: byDepth.filter((p) => p.pairAddress && (p.liquidity?.usd ?? 0) > 500).slice(0, 3).map((p) => p.pairAddress!),
     ageDays: oldest ? Math.floor((Date.now() - oldest) / DAY) : undefined,
     holders: hold.count,
+    ...(allVolume !== undefined
+      ? { totalVolume24hUsd: allVolume, cexVolume24hUsd: Math.max(0, allVolume - sum((p) => p.volume?.h24)) }
+      : {}),
     top10HolderShare: hold.top10,
     listedHandle,
   };

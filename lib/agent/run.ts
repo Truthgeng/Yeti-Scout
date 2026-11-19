@@ -79,9 +79,8 @@ export async function runCheck(input: CheckInput, opts: { skipCache?: boolean } 
     input.coinType && market?.topPools.length
       ? lap("swaps", swapSignals(input.coinType, market.topPools)).catch((e) => { console.error("swap read failed", e); errors.push("swaps"); return null; })
       : Promise.resolve(null),
-    handle && !input.handle
-      ? fetchProfile(handle, receipts).catch(() => undefined)
-      : Promise.resolve(undefined),
+    // A handle found on DexScreener is the project's own listing, so it needs no paid profile lookup
+    Promise.resolve(undefined as Profile | null | undefined),
   ]);
   if (autoProfile !== undefined) profile = autoProfile;
 
