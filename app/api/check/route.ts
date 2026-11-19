@@ -33,7 +33,8 @@ function parseInput(body: any): CheckInput | string {
 function scan(input: CheckInput, extra: { headers?: Headers; refund?: string; onDone?: () => void } = {}) {
   const enc = new TextEncoder();
   const stream = new ReadableStream({
-    async start(ctrl) {
+    // Not awaited: start() returning early lets each step reach the page as it happens
+    start(ctrl) { void (async () => {
       const send = (o: unknown) => { try { ctrl.enqueue(enc.encode(JSON.stringify(o) + "\n")); } catch { /* closed */ } };
       try {
         const report = await runCheck(input, { onStage: (stage, ok) => send({ type: "stage", stage, ok }) });
@@ -49,11 +50,12 @@ function scan(input: CheckInput, extra: { headers?: Headers; refund?: string; on
       } finally {
         ctrl.close();
       }
-    },
+    })(); },
   });
   const headers = extra.headers ?? new Headers();
   headers.set("content-type", "application/x-ndjson; charset=utf-8");
-  headers.set("cache-control", "no-store");
+  headers.set("cache-control", "no-store, no-transform");
+  headers.set("x-accel-buffering", "no");
   return new Response(stream, { headers });
 }
 
