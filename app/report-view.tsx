@@ -113,7 +113,7 @@ export function ReportView({ report, writing = false, resultRef, shared = false 
                   <h3>Market</h3>
                   <div className="stats">
                     <div><b>{usd(report.market.marketCapUsd)}</b><span>market cap</span></div>
-                    <div><b>{usd(report.market.fdvUsd)}</b><span>FDV</span></div>
+                    {report.market.fdvUsd !== undefined && <div><b>{usd(report.market.fdvUsd)}</b><span>FDV</span></div>}
                     <div><b>{usd(report.market.liquidityUsd)}</b><span>liquidity, all pools</span></div>
                     <div><b>{usd(report.market.volume24hUsd)}</b><span>24h DEX volume, all pools</span></div>
                     <div><b>{report.market.holders !== undefined ? compact(report.market.holders) : "?"}</b><span>holders</span></div>
