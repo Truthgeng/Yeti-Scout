@@ -1,3 +1,5 @@
+<img src="public/logo-512.png" width="120" alt="Yeti Scout logo" />
+
 # Yeti Scout
 
 Run any Sui token through the sniff test.

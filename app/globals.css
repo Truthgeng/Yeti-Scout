@@ -49,7 +49,7 @@ a { color: var(--frost); text-underline-offset: 3px; }
   gap: 12px; padding: 14px max(20px, calc((100vw - 1240px) / 2)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   background: rgba(26, 26, 46, 0.6); border-bottom: 1px solid var(--edge); }
 .brand { display: flex; align-items: center; gap: 10px; flex: none; color: var(--text); text-decoration: none; font: 700 22px/1 var(--display); white-space: nowrap; }
-.brand img { flex: none; }
+.brand img { flex: none; border-radius: 9px; }
 .nav-right { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; }
 .pill { white-space: nowrap; font-size: 13px; color: var(--muted); border: 1px solid var(--edge); border-radius: 999px; padding: 6px 12px; }
 .pill.good { color: var(--good); border-color: rgba(111, 214, 168, 0.3); }

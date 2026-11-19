@@ -220,7 +220,7 @@ export default function Home() {
     <>
       <div className="glow" aria-hidden />
       <nav className="nav">
-        <a className="brand" href="/"><img src="/mark.svg" alt="" width={30} height={30} />Yeti Scout</a>
+        <a className="brand" href="/"><img src="/logo.png" alt="" width={34} height={34} className="brand-logo" />Yeti Scout</a>
         <div className="nav-right">
           {config?.gated && !holder.signedIn && config.freeLeft !== null && <span className="pill hide-sm">{config.freeLeft} free scan{config.freeLeft === 1 ? "" : "s"} left</span>}
           {isHolder && <span className="pill good hide-sm">{holder.scansLeft} scans left today</span>}
