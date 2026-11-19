@@ -6,7 +6,12 @@ Run any Sui token through the sniff test.
 
 Paste a Sui coin type or an X handle. Yeti Scout reads who is really trading the token on Sui and who is really posting about it on X, then tells you if the traction is real or farmed. Every verdict is stored on Walrus and frozen on Sui, so it can't be quietly changed later.
 
-Built for CLAY Hackathon III (Code Like a Yeti) by Lofi the Yeti.
+Built for CLAY Hackathon III (Code Like a Yeti) by Lofi the Yeti, AI product track.
+
+- Live app: https://yeti-scout.vercel.app
+- Demo video: https://youtu.be/-h-hTNIZBPM
+- Move package (Sui testnet): `0x217477f1b47f3e10c18eb9464e7595aa13431f6ae0e9aee2afec084a5ba47444`
+- Built on: Sui (Move, GraphQL), Walrus, Next.js
 
 ## Who it's for
 
