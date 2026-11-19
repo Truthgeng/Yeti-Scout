@@ -14,11 +14,12 @@ export async function POST(req: NextRequest) {
   try {
     owner = await verifySignIn({ address, issuedAt, signature, host: req.headers.get("host") ?? "" });
   } catch (e) {
-    console.warn("sign-in rejected", e);
+    console.warn("sign-in rejected", JSON.stringify({ wallet: `${String(address).slice(0, 8)}…`, reason: e instanceof Error ? e.message.slice(0, 160) : String(e) }));
     return NextResponse.json({ error: e instanceof Error && e.message.includes("expired") ? e.message : "That signature didn't check out. Try connecting again." }, { status: 401 });
   }
   try {
     const holding = await checkHolding(owner);
+    console.log("sign-in", JSON.stringify({ wallet: `${owner.slice(0, 8)}…${owner.slice(-4)}`, lofi: Math.round(holding.lofi), needed: holding.needed, holds: holding.holds }));
     const res = NextResponse.json({ ...holding, scansLeft: scansLeft(owner) });
     res.cookies.set(HOLDER_COOKIE, holderCookie(owner), { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: 60 * 60 * 24 });
     return res;
