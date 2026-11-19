@@ -33,7 +33,7 @@ const cfg = () => ({
   graphql: process.env.PUBLISH_GRAPHQL_URL || DEFAULTS[network].graphql,
   publishers: (process.env.WALRUS_PUBLISHER_URL || "").split(",").map((u) => u.trim()).filter(Boolean),
   aggregator: process.env.WALRUS_AGGREGATOR_URL || DEFAULTS[network].aggregator,
-  epochs: Number(process.env.WALRUS_EPOCHS || "5"),
+  epochs: Number(process.env.WALRUS_EPOCHS || "53"),
   pkg: process.env.SCOUT_PACKAGE_ID,
   scout: process.env.SCOUT_OBJECT_ID,
   cap: process.env.SCOUT_ADMIN_CAP_ID,

@@ -15,15 +15,24 @@ Anyone on Sui about to buy into a token because their timeline won't stop talkin
 ## What it checks
 
 **On Sui**
-- **Who's trading it.** Reads the latest ~200 transactions in the token's main pool straight from Sui (GraphQL). For each one it takes the sender's own change in the token, so a swap routed through an aggregator still counts the real trader. From that: how many wallets trade it, how much of the trading comes from the 10 busiest, wallets that both bought and sold in the window (a common wash pattern), and wallets that keep swapping the exact same size (scripted volume).
-- **The market.** Every pool on every Sui DEX (Cetus, Turbos, Bluefin, Aftermath and more) through DexScreener: liquidity, 24h volume vs trade count, market cap vs liquidity, pool age.
+- **Who's trading it.** Reads the latest transactions in the token's 3 deepest pools straight from Sui (GraphQL). For each one it takes the sender's own change in the token, so a swap routed through an aggregator still counts the real trader. From that: how many wallets trade it, how much comes from the 10 busiest, wallets that bought and sold in the window, and bots that buy and sell the exact same size back and forth (wash trading).
+- **The market.** Every pool on every Sui DEX (Cetus, Turbos, Bluefin, Aftermath and more) through DexScreener: market cap, FDV, liquidity, 24h volume against trade count, market cap against liquidity, pool age.
 - **Holders.** Holder count and the top 10 wallets' share of supply, from GeckoTerminal.
+- **Off-chain volume, shown but never scored.** CoinGecko's all-exchange volume is shown next to the Sui DEX figure, so anyone comparing sites sees where the gap comes from. When exchanges report volume far above the market cap and the onchain volume, the report says so.
 
 **On X**
 - Posts tagging the project in the last 7 days, who wrote them (established, regular, new, likely fake), copy-paste text, and whether a few accounts make most of the noise. Every account links to its post.
 - If you only paste a coin type, Yeti Scout uses the X account the token lists on DexScreener.
 
-**The verdict** comes from fixed rules, so the same token gets the same score: **Passed the sniff test**, **Smells a bit off** or **Failed the sniff test**. An AI then writes a short plain-English read on the numbers. It never sets the score.
+**The verdict** comes from fixed rules, so the same data always gets the same score: **Passed the sniff test**, **Smells a bit off** or **Failed the sniff test**. An AI then writes a short plain-English read on the numbers. It never sets the score.
+
+The rules are fair to size. On deep pools ($500k+ liquidity), bots buying and selling the same size are market makers, so they are shown but not penalised; on thinner tokens the same pattern counts as wash trading. Top-10 concentration only counts against small tokens, because on established ones the biggest wallets are treasuries, staking and exchanges. Tested on LOFI, DEEP, WAL, CETUS, BLUB and HIPPO.
+
+## Live, onchain and shareable
+
+- **Live scan steps.** The scan streams each step to the page as it finishes: pools, swaps, X posts, score.
+- **Recently sniffed.** The homepage lists the latest verdicts, read back from the `ReportPublished` events of the Move package on Sui.
+- **A page for every report.** `/r/<report id>` loads the frozen `ScoutReport` object from Sui and the full report from Walrus. "Share on X" links there, so every shared scan opens that exact verdict.
 
 ## Hold to scan
 
