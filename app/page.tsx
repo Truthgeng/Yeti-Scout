@@ -311,11 +311,12 @@ export default function Home() {
                   <h3>Market</h3>
                   <div className="stats">
                     <div><b>{usd(report.market.liquidityUsd)}</b><span>liquidity</span></div>
-                    <div><b>{usd(report.market.volume24hUsd)}</b><span>24h volume</span></div>
+                    <div><b>{usd(report.market.volume24hUsd)}</b><span>24h DEX volume</span></div>
                     <div><b>{report.market.holders !== undefined ? compact(report.market.holders) : "?"}</b><span>holders</span></div>
                     <div><b>{report.market.top10HolderShare !== undefined ? `${Math.round(report.market.top10HolderShare * 100)}%` : "?"}</b><span>held by top 10</span></div>
                   </div>
                   <p className="fine">{report.market.pools} pool{report.market.pools === 1 ? "" : "s"}{report.market.mainPool && <> · main pool on {report.market.mainPool.dex}</>}{report.market.ageDays !== undefined && <> · {age(report.market.ageDays)} old</>}</p>
+                  <p className="fine">Onchain Sui DEX trading only. Sites like CoinGecko also count centralised exchanges, so their volume and price can differ.</p>
                 </div>
               )}
 
@@ -362,10 +363,12 @@ export default function Home() {
                   <p>
                     This verdict is frozen on Sui {report.onchain.network} and can't be edited.{" "}
                     <a href={`https://suiscan.xyz/${report.onchain.network}/tx/${report.onchain.txDigest}`} target="_blank" rel="noreferrer">View the Sui transaction</a>
-                    {report.onchain.walrusUrl && <> · <a href={report.onchain.walrusUrl} target="_blank" rel="noreferrer">Full report on Walrus</a></>}
+                    {report.onchain.walrusUrl
+                      ? <> · <a href={report.onchain.walrusUrl} target="_blank" rel="noreferrer">Full report on Walrus</a></>
+                      : <span className="muted"> Walrus storage was busy, so the full report wasn't stored this time.</span>}
                   </p>
                 ) : report.onchain?.error ? (
-                  <p className="muted">Recording on Sui failed this time ({report.onchain.error}). The scan itself is fine.</p>
+                  <p className="muted">This scan couldn't be recorded on Sui this time. The result above is still complete.</p>
                 ) : writing ? (
                   <p className="muted">Recording on Walrus and Sui…</p>
                 ) : report.mock ? (

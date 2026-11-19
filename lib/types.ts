@@ -121,7 +121,10 @@ export type Onchain = {
   walrusUrl?: string;
   txDigest?: string;
   reportId?: string;
+  /** Sui recording failed */
   error?: string;
+  /** Walrus storage failed (the verdict can still be on Sui) */
+  walrusError?: string;
 };
 
 export type Report = {
